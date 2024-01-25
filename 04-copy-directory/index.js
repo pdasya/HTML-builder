@@ -1,43 +1,24 @@
-const fs = require('fs');
+const fsPromises = require('fs/promises');
 const path = require('path');
 
-function copyDir(callback) {
-  const sourceDir = path.join(__dirname, 'files');
-  const desiredDir = path.join(__dirname, 'files-copy');
+const sourceFolderPath = path.join(__dirname, 'files');
+const targetFolderPath = path.join(__dirname, 'files-copy');
 
-  fs.mkdir(desiredDir, { recursive: true }, (mkdirError) => {
-    if (mkdirError) {
-      return callback(`Error creating directory: ${mkdirError.message}`);
-    }
-
-    fs.readdir(sourceDir, (readDirError, files) => {
-      if (readDirError) {
-        return callback(`Error reading directory: ${readDirError.message}`);
-      }
-
+function copyDir() {
+  fsPromises
+    .rm(targetFolderPath, { force: true, recursive: true })
+    .then(() => fsPromises.mkdir(targetFolderPath, { recursive: true }))
+    .then(() => fsPromises.readdir(sourceFolderPath))
+    .then((files) => {
       files.forEach((file) => {
-        const sourcePath = path.join(sourceDir, file);
-        const desiredPath = path.join(desiredDir, file);
-
-        fs.copyFile(sourcePath, desiredPath, (copyFileError) => {
-          if (copyFileError) {
-            console.error(
-              `Error copying file ${file}: ${copyFileError.message}`,
-            );
-          } else {
-            console.log(`File copied: ${file}`);
-          }
-        });
+        const sourceFilePath = path.join(sourceFolderPath, file);
+        const targetFilePath = path.join(targetFolderPath, file);
+        fsPromises
+          .copyFile(sourceFilePath, targetFilePath)
+          .catch((err) => console.log(err.message));
       });
-
-      console.log('Directory copied successfully.');
-      callback(null);
-    });
-  });
+    })
+    .catch((err) => console.log(err.message));
 }
 
-copyDir((error) => {
-  if (error) {
-    console.error(error);
-  }
-});
+copyDir();
